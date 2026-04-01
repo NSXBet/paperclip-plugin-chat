@@ -2,6 +2,62 @@
 
 Multi-adapter AI chat plugin for Paperclip. Provides a conversational interface to Paperclip agents with thread management, slash commands, and real-time streaming.
 
+## Installation from Zero
+
+### Prerequisites
+
+- A running Paperclip instance (`paperclipai` CLI available)
+- Node.js 20+ and npm
+- At least one agent with `adapterType: "claude_local"` (or another supported adapter)
+
+### Step 1: Clone and set up the SDK
+
+```bash
+git clone https://github.com/NSXBet/paperclip-plugin-chat.git
+cd paperclip-plugin-chat
+
+# Copy the Paperclip Plugin SDK into the local .paperclip-sdk/ directory.
+# The SDK is available from your Paperclip installation's bun cache:
+mkdir -p .paperclip-sdk
+cp -r ~/.bun/install/cache/@paperclipai/plugin-sdk@*/  .paperclip-sdk/plugin-sdk
+```
+
+### Step 2: Install dependencies and build
+
+```bash
+npm install
+npm run build
+```
+
+The build pipeline:
+1. `tsc` — type-checks and emits declaration files
+2. `build-worker.mjs` — bundles `src/worker.ts` with esbuild (all deps inlined, zero runtime resolution needed)
+3. `build-ui.mjs` — bundles `src/ui/index.tsx` with esbuild (React/SDK UI externalized)
+
+Output: `dist/worker.js` (server-side, self-contained) and `dist/ui/index.js` (browser bundle).
+
+### Step 3: Install the plugin into Paperclip
+
+```bash
+paperclipai plugin install "$(pwd)" --local
+```
+
+> **Note:** This command requires board-level access. Run it as the Paperclip board user, not as an agent.
+
+### Step 4: Verify the plugin is running
+
+```bash
+paperclipai plugin inspect paperclip-chat
+```
+
+Look for `status: running`. If it shows `errored`, check `paperclipai plugin inspect paperclip-chat` for error details.
+
+### Step 5: Access the chat
+
+After installation, hard-refresh your browser (Ctrl+Shift+R). You should see:
+- A **"Chat"** link in the company sidebar (between Inbox and Issues)
+- Clicking it navigates to `/:companyPrefix/chat`
+
 ## How It Works
 
 The plugin creates a chat UI inside the Paperclip plugin page slot. When a user sends a message, the plugin:
@@ -12,28 +68,6 @@ The plugin creates a chat UI inside the Paperclip plugin page slot. When a user 
 4. Streams the agent's response back to the UI
 
 All LLM access goes through Paperclip's agent session system. The plugin does not talk to models directly — it talks to agents that talk to models. See [Plugin vs Core Analysis](docs/plugin-vs-core-chat.md) for the implications of this architecture.
-
-## Prerequisites
-
-- A running Paperclip instance
-- At least one agent with `adapterType: "claude_local"` (or another supported adapter)
-- The plugin installed and enabled in **Settings > Plugins**
-
-## Build
-
-```bash
-npm run build
-```
-
-Produces `dist/worker.js` (server-side) and `dist/ui/index.js` (browser bundle).
-
-### Docker deployment
-
-```bash
-docker cp dist/ui/index.js paperclip-plugin-chat-server-1:/app/packages/plugins/plugin-chat/dist/ui/index.js
-```
-
-Hard refresh the browser after deploying — the server caches bundles with ETags.
 
 ## Features
 
@@ -77,8 +111,8 @@ Navigate to **Settings > Plugins > Chat** (gear icon):
 
 | Capability | Purpose |
 |-----------|---------|
-| `ui.page.register` | Full chat page at `/:prefix/plugins/:pluginId` |
-| `ui.sidebar.register` | Sidebar entry point |
+| `ui.page.register` | Full chat page at `/:prefix/chat` |
+| `ui.sidebar.register` | Sidebar nav link |
 | `agent.sessions.*` | Create and message agent sessions |
 | `agents.read` | Discover available agents/adapters |
 | `plugin.state.*` | Thread and message persistence |
@@ -107,13 +141,48 @@ ChatPage (React)
   |-- usePluginStream("chat:threadId") <-- SSE events (text, thinking, tool, done)
 ```
 
+## Troubleshooting
+
+### Plugin fails to activate with `ERR_MODULE_NOT_FOUND: Cannot find package 'zod'`
+
+The worker must be bundled with esbuild so all dependencies (including `@paperclipai/plugin-sdk`, `zod`, `@paperclipai/shared`) are inlined. If you see this error, run `npm run build` — the build script bundles the worker via `scripts/build-worker.mjs`.
+
+### Chat link doesn't appear in sidebar
+
+Paperclip's sidebar renders `PluginSlotOutlet` with `slotTypes=["sidebar"]`, which matches `ui.slots` entries — not `launchers`. The manifest must include a `sidebar` type slot (not just a launcher). This is already configured in the current version.
+
+### Plugin shows `status: errored` after install
+
+```bash
+paperclipai plugin inspect paperclip-chat
+```
+
+Check the error message. Common causes:
+- Missing SDK: ensure `.paperclip-sdk/plugin-sdk` exists and `npm install` completed
+- Build not run: ensure `npm run build` completed without errors
+
+## Development
+
+```bash
+# Type-check without building
+npm run typecheck
+
+# Full build
+npm run build
+
+# Clean build artifacts
+npm run clean
+
+# Reinstall after changes
+paperclipai plugin uninstall paperclip-chat
+paperclipai plugin install "$(pwd)" --local
+```
+
 ## Known Limitations
 
 - **No direct LLM access** — requires a pre-configured agent; can't create agents or select models
 - **Agent sessions are task-oriented** — no way to distinguish "answer this question" from "execute this task"
-- **No design system** — UI is built with inline styles and CSS variable fallbacks
 - **No deep linking** — thread state is lost on page refresh
-- **No toast/dialog** — errors go to console only
 - **Host page chrome** — breadcrumbs and back button can't be hidden
 
 For the full analysis, see [Plugin vs Core: Chat Feature Analysis](docs/plugin-vs-core-chat.md).

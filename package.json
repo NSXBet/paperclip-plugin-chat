@@ -12,12 +12,14 @@
     "ui": "./dist/ui/"
   },
   "scripts": {
-    "build": "tsc && node ./scripts/build-ui.mjs",
+    "build": "tsc && node ./scripts/build-worker.mjs && node ./scripts/build-ui.mjs",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@paperclipai/plugin-sdk": "^1.0.0"
+    "@paperclipai/plugin-sdk": "file:.paperclip-sdk/plugin-sdk",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@types/node": "^24.6.0",
@@ -38,6 +40,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/webprismdevin/paperclip-plugin-chat.git"
+    "url": "https://github.com/NSXBet/paperclip-plugin-chat.git"
   }
 }
