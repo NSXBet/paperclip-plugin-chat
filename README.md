@@ -10,21 +10,24 @@ Multi-adapter AI chat plugin for Paperclip. Provides a conversational interface 
 - Node.js 20+ and npm
 - At least one agent with `adapterType: "claude_local"` (or another supported adapter)
 
-### Step 1: Clone and set up the SDK
+### Step 1: Clone and install
 
 ```bash
 git clone https://github.com/NSXBet/paperclip-plugin-chat.git
 cd paperclip-plugin-chat
-
-# Copy the Paperclip Plugin SDK into the local .paperclip-sdk/ directory.
-# The SDK is available from your Paperclip installation's bun cache:
-mkdir -p .paperclip-sdk
-cp -r ~/.bun/install/cache/@paperclipai/plugin-sdk@*/  .paperclip-sdk/plugin-sdk
+npm install
+npm run build
 ```
 
-### Step 2: Install dependencies and build
+The `preinstall` script automatically locates and copies the Paperclip Plugin SDK from your local Paperclip installation (bun cache, npm cache, or plugins directory).
+
+If the auto-detection fails, set it up manually:
 
 ```bash
+# Find the SDK in your Paperclip installation's cache:
+mkdir -p .paperclip-sdk
+cp -r ~/.bun/install/cache/@paperclipai/plugin-sdk@*/ .paperclip-sdk/plugin-sdk
+# Then re-run:
 npm install
 npm run build
 ```

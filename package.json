@@ -12,6 +12,8 @@
     "ui": "./dist/ui/"
   },
   "scripts": {
+    "setup": "bash ./scripts/setup-sdk.sh",
+    "preinstall": "bash ./scripts/setup-sdk.sh || true",
     "build": "tsc && node ./scripts/build-worker.mjs && node ./scripts/build-ui.mjs",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit"
